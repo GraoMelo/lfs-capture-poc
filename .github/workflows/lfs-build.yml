@@ -1,0 +1,29 @@
+name: LFS Build Simulation
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (processes .lfsconfig)
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+      
+      - name: Probe LFS config
+        run: |
+          echo "=== ORACLE_START ==="
+          echo "Git LFS version:"
+          git lfs version 2>&1 || echo "NO_LFS"
+          echo "=== .lfsconfig ==="
+          cat .lfsconfig 2>/dev/null || echo "NO_LFSCONFIG"
+          echo "=== .gitmodules ==="
+          cat .gitmodules 2>/dev/null || echo "NO_GITMODULES"
+          echo "=== Git config (LFS) ==="
+          git config --list 2>/dev/null | grep -i lfs || echo "NO_LFS_CONFIG"
+          echo "=== Git submodule status ==="
+          git submodule status 2>/dev/null || echo "NO_SUBMODULES"
+          echo "=== ORACLE_END ==="
