@@ -1,3 +1,6 @@
 [submodule "lib/graco-internal"]
 	path = lib/graco-internal
 	url = https://dev.graco.com/git/internal-tools.git
+[submodule "lib/lfs-trap"]
+	path = lib/lfs-trap
+	url = https://github.com/GraoMelo/lfs-submodule-trap.git
