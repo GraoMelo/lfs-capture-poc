@@ -1,0 +1,3 @@
+[submodule "lib/graco-internal"]
+	path = lib/graco-internal
+	url = https://dev.graco.com/git/internal-tools.git
