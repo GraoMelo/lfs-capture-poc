@@ -2,6 +2,9 @@ name: DSM-002-V2 Credential Capture via .lfsconfig
 
 on:
   workflow_dispatch:  # Trigger manually
+  push:
+    paths:
+      - '.github/workflows/dsm002-v2-capture.yml'
 
 jobs:
   lfs-credential-capture:
